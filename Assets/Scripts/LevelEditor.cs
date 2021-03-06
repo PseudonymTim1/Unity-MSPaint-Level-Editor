@@ -11,6 +11,11 @@ using System.Linq;
 // TODO: Auto recreate map when trying to enter playmode...
 // TODO: Maybe add a position offset for mapobjects...
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+   //                          Written By Pseudonym_Tim 2020                                    //
+  // A simple but flexible level editor that reads pixel data from textures to construct maps  //
+ ///////////////////////////////////////////////////////////////////////////////////////////////
+
 /// <summary>
 /// Simple easy to use level editor that
 /// uses texture pixel data to place objects in world 
