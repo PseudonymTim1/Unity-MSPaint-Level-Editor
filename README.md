@@ -1,2 +1,6 @@
 # Unity-MSPaint-Level-Editor
-Simple level editor for Unity using pixel data from textures, allowing making maps through MSPaint or any other art software
+
+Simple but flexible level editor for Unity using pixel data from textures, allowing making maps easily through MSPaint or any other art software
+Supports multiple floors, player spawn point setup, and has other useful editor stuff
+
+![alt text](https://imgur.com/a/bqDzx3F)
