@@ -1,0 +1,57 @@
+Instructions/Order Of Operations
+=================================
+
+SIDENOTE: Because of how the floor textures are named when saved, for convenience, 
+If you are editing them in a program like Aseprite for example, or another art software that automatically detects
+importing animation frames, open up the FIRST floor plan texture first when editing and it will automatically detect this and ask you
+to import them in a series of numbered frames, this can allow you to more cohesively switch between previous floor frames
+to see how you should be constructing that floor
+
+1.) Make sure the level editor script is on an empty GameObject in the scene, 
+set up editor bool toggles to your liking and map materials and bool toggles, and drag in map parent (that empty object) and player transform
+
+2.) Click the Create Editor Directory button if not already created
+
+3.) Add your map objects, set up their pixel colors, and set up player spawn point 
+(spawn point is optional but recommended as it does neat editor camera stuff)
+
+4.) Navigate to the new directory and into the floor plans folder, these are where all your floor textures are stored with a black dot
+marking the center of the map, do changes to the first floorplan texture first with MSPaint or any other art software
+if you have "show previous floors" enabled and want multiple floors to copy over the first floors texture to "extrude that same floor upwards"
+
+5.) Change floorplan list size for how many floors you want your map to be
+
+6.) Modify the floor plan textures with MSPaint or any other software to your liking
+
+7.) Make sure to refresh the floor plans after each external edit
+
+8.) Create the map! Changes should be reflected in the world!
+
+
+Settings and what they do:
+==========================
+
+Require Player Spawn Point: Throws an error in the console complaining about issues with spawn points in the map if any,
+for instance, if you have multiple on one map or don't have one at all and want to enforce it
+
+Save Map Edits To Scene: Saves the scene and all map objects you may have created when you do Clear Map or Create Map
+
+Show Previous Floor: Copies previous floor texture when adding to the floor plan list so you don't have to redraw much the same floor
+and can get a better idea
+
+
+Buttons and what they do:
+=========================
+
+Recreate Floor Plans: Recreates all floor plan textures back to default, aka just a black pixel in the middle of them
+
+Refresh floor plans: Refreshes all floor plan textures in the floor plan list so the level editor reads your changes
+
+Create Map: Constructs the map in the world reading the pixel data from the floor plans
+
+Clear Map: Clears out all floors and map objects in the world, wiping the scene clean
+
+Create Editor Directory: Creates the level editor directory and first floor plan texture
+
+Delete Editor Directory: Deletes the level editor directory and all files
+
