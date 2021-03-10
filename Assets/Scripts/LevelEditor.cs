@@ -24,6 +24,10 @@ using System.Linq;
 public class LevelEditor : MonoBehaviour
 {
     private const string LEVEL_EDITOR_ERROR_PREFIX = "LEVEL_EDITOR: ";
+    private const string EDITOR_ROOT_PATH = "/LevelEditor/";
+    private const string MAP_DIR_PATH = "/LevelEditor/Map";
+    private const string FLOOR_PLAN_PATH = "/FloorPlans/";
+    public const string FLOOR_PLAN_NAMEPREFIX = "FloorPlan";
 
     [Header("Editor Settings")]
     public bool requirePlayerSpawnPoint = true;
@@ -106,7 +110,7 @@ public class LevelEditor : MonoBehaviour
         int floorIndex = 0;
 
         // Load texture...
-        List<Texture2D> floorPlanTexturesInDirectory = GetFilesAtPath<Texture2D>("LevelEditor/Map" + selectedMapIndex + "/FloorPlans/").ToList();
+        List<Texture2D> floorPlanTexturesInDirectory = GetFilesAtPath<Texture2D>(MAP_DIR_PATH + selectedMapIndex + FLOOR_PLAN_PATH).ToList();
 
         // Create the textures for each floor of this map...
         foreach(FloorPlan floorPlan in map.floorPlans)
@@ -119,7 +123,10 @@ public class LevelEditor : MonoBehaviour
             SaveFloorTextures(floorPlan.floorPlanTexture, floorIndex);
 
             // Assign our new texture...
-            floorPlan.floorPlanTexture = floorPlanTexturesInDirectory[floorIndex - 1];
+            if(floorPlanTexturesInDirectory[floorIndex - 1])
+            {
+                floorPlan.floorPlanTexture = floorPlanTexturesInDirectory[floorIndex - 1];
+            }
         }
     }
 
@@ -130,7 +137,7 @@ public class LevelEditor : MonoBehaviour
 
         Map map = GetCurrentMap();
 
-        string floorPlanDirPath = Application.dataPath + "/LevelEditor/Map" + selectedMapIndex + "/FloorPlans/";
+        string floorPlanDirPath = Application.dataPath + MAP_DIR_PATH + selectedMapIndex + FLOOR_PLAN_PATH;
         byte[] texBytesNew = null;
 
         // Always enforce a single floor plan...
@@ -146,18 +153,20 @@ public class LevelEditor : MonoBehaviour
         if(map.floorPlans.Count > 0)
         {
             // Always update our first floor plan texture...
-            texBytesNew = File.ReadAllBytes(floorPlanDirPath + "FloorPlan" + 1 + ".png");
-
+            if(File.Exists(floorPlanDirPath + FLOOR_PLAN_NAMEPREFIX + 1 + ".png"))
+            {
+                texBytesNew = File.ReadAllBytes(floorPlanDirPath + FLOOR_PLAN_NAMEPREFIX + 1 + ".png");
+            }
+            
             SetTextureImporterFormat(map.floorPlans[0].floorPlanTexture, true); // Make sure it's readable...
 
-            //map.floorPlans[0].floorPlanTexture.Apply();
             map.floorPlans[0].floorPlanTexture.LoadImage(texBytesNew, false);
-            
         }
 
-        GetMapParentChildren();
+        GetMapFloorChildren();
 
         int floorIndex = 0;
+        int moddedFloorIndex = 0;
 
         List<Texture2D> floorPlanTextures = new List<Texture2D>();
 
@@ -165,42 +174,49 @@ public class LevelEditor : MonoBehaviour
         foreach(FloorPlan floorPlan in map.floorPlans)
         {
             floorIndex++;
+            moddedFloorIndex++;
 
-            // If the floor plan doesn't already exist there...
-            if(!File.Exists(Application.dataPath + "/LevelEditor/Map" + selectedMapIndex + "/FloorPlans/" + "FloorPlan" + floorIndex + ".png"))
+            // Setup, assign and save one...
+
+            floorPlan.floorPlanTexture = SetupFloorCanvas(floorPlan);
+
+            // Get the previous floor texture data and apply it to this floors for convieniance...
+
+            // Make sure it exists first...
+
+            if(showPrevFloor && (moddedFloorIndex - 1) >= 0) { moddedFloorIndex = moddedFloorIndex - 1; }
+
+            if(showPrevFloor)
             {
-                // Setup, assign and save one...
-
-                floorPlan.floorPlanTexture = SetupFloorCanvas(floorPlan);
-
-                // Get the previous floor texture data and apply it to this floors for convieniance...
-                if((floorIndex - 1) >= 0 && showPrevFloor)
+                if(File.Exists(floorPlanDirPath + FLOOR_PLAN_NAMEPREFIX + (moddedFloorIndex + 1) + ".png"))
                 {
-                    texBytesNew = File.ReadAllBytes(floorPlanDirPath + "FloorPlan" + (floorIndex - 1) + ".png");
+                    texBytesNew = File.ReadAllBytes(floorPlanDirPath + FLOOR_PLAN_NAMEPREFIX + (moddedFloorIndex + 1) + ".png");
+
+                    ApplyTextureChanges(floorPlan.floorPlanTexture, texBytesNew);
                 }
-                else
-                {
-                    texBytesNew = File.ReadAllBytes(floorPlanDirPath + "FloorPlan" + (floorIndex) + ".png");
-                }
-
-                floorPlan.floorPlanTexture.LoadImage(texBytesNew);
-
-                floorPlan.floorPlanTexture.Apply();
-
-
-                // Save the texture...
-                SaveFloorTextures(floorPlan.floorPlanTexture, floorIndex);
             }
+            else
+            {
+                if(File.Exists(floorPlanDirPath + FLOOR_PLAN_NAMEPREFIX + (moddedFloorIndex) + ".png"))
+                {
+                    texBytesNew = File.ReadAllBytes(floorPlanDirPath + FLOOR_PLAN_NAMEPREFIX + (moddedFloorIndex) + ".png");
+
+                    ApplyTextureChanges(floorPlan.floorPlanTexture, texBytesNew);
+                }
+            }
+            
+            // Save the texture...
+            SaveFloorTextures(floorPlan.floorPlanTexture, floorIndex);
 
             // Set the name and add it to the list
-            floorPlan.floorPlanTexture.name = "FloorPlan" + floorIndex;
+            floorPlan.floorPlanTexture.name = FLOOR_PLAN_NAMEPREFIX + floorIndex;
             floorPlanTextures.Add(floorPlan.floorPlanTexture);
         }
 
         // If they were removed from the list, delete the floor plan texture...
 
         // Search through our floor plan texture directory, grab all floorplan textures and put them in a list
-        List<Texture2D> floorPlanTexturesInDirectory = GetFilesAtPath<Texture2D>("LevelEditor/Map" + selectedMapIndex + "/FloorPlans/").ToList();
+        List<Texture2D> floorPlanTexturesInDirectory = GetFilesAtPath<Texture2D>(MAP_DIR_PATH + selectedMapIndex + FLOOR_PLAN_PATH).ToList();
 
         // Store the difference between the lists, these are the textures we want to make go bye bye
         List<Texture2D> texturesToDelete = floorPlanTexturesInDirectory.Where(item => !floorPlanTextures.Any(item2 => item2.name == item.name)).ToList();
@@ -208,16 +224,23 @@ public class LevelEditor : MonoBehaviour
         // Delete them...
         foreach(Texture2D tex in texturesToDelete)
         {
-            File.Delete(Application.dataPath + "/LevelEditor/Map" + selectedMapIndex + "/FloorPlans/" + tex.name + ".png");
+            File.Delete(Application.dataPath + MAP_DIR_PATH + selectedMapIndex + FLOOR_PLAN_PATH + tex.name + ".png");
         }
 
         // Refresh our asset database...
         RefreshAssetDatabase();
     }
 
+    private void ApplyTextureChanges(Texture2D floorPlanTexture, byte[] newBytes)
+    {
+        floorPlanTexture.LoadImage(newBytes);
+
+        floorPlanTexture.Apply();
+    }
+
     public void CreateEditorDirectory()
     {
-        string floorPlanDirPath = Application.dataPath + "/LevelEditor/Map" + selectedMapIndex + "/FloorPlans/";
+        string floorPlanDirPath = Application.dataPath + MAP_DIR_PATH + selectedMapIndex + FLOOR_PLAN_PATH;
 
         if(!Directory.Exists(floorPlanDirPath))
         {
@@ -242,18 +265,19 @@ public class LevelEditor : MonoBehaviour
         }
     }
 
+    // Cool little piece of code to change a texture asset to be readable without doing it manually in the editor...
     public static void SetTextureImporterFormat(Texture2D texture, bool isReadable)
     {
-        if(null == texture) return;
+        if(!texture) return;
 
         string assetPath = UnityEditor.AssetDatabase.GetAssetPath(texture);
-        var tImporter = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
+        UnityEditor.TextureImporter texImporter = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.TextureImporter;
 
-        if(tImporter != null)
+        if(texImporter != null)
         {
-            tImporter.textureType = UnityEditor.TextureImporterType.Default;
+            texImporter.textureType = UnityEditor.TextureImporterType.Default;
 
-            tImporter.isReadable = isReadable;
+            texImporter.isReadable = isReadable;
 
             UnityEditor.AssetDatabase.ImportAsset(assetPath);
             UnityEditor.AssetDatabase.Refresh();
@@ -262,10 +286,11 @@ public class LevelEditor : MonoBehaviour
 
     private void OnValidate()
     {
+        // (Make sure we refresh the list and our changes in the directory every time we change a value)...
         RefreshFloorPlans();
     }
 
-    private void GetMapParentChildren()
+    private void GetMapFloorChildren()
     {
         mapParentChildren = new List<Transform>();
 
@@ -340,34 +365,39 @@ public class LevelEditor : MonoBehaviour
 
         byte[] texBytes = texture.EncodeToPNG();
         
-        string floorDirPath = Application.dataPath + "/LevelEditor/Map" + selectedMapIndex + "/FloorPlans/";
+        string floorDirPath = Application.dataPath + MAP_DIR_PATH + selectedMapIndex + FLOOR_PLAN_PATH;
 
         if(!Directory.Exists(floorDirPath)) { Directory.CreateDirectory(floorDirPath); }
 
         // Save floor texture as PNG
-        File.WriteAllBytes(floorDirPath + "FloorPlan" + floorIndex + ".png", texBytes);
+        File.WriteAllBytes(floorDirPath + FLOOR_PLAN_NAMEPREFIX + floorIndex + ".png", texBytes);
 
         RefreshAssetDatabase(); // Refresh our database now to reflect our changes...
     }
 
     public void DeleteLevelEditorDirectory()
     {
-        string floorDirPath = Application.dataPath + "/LevelEditor/Map" + selectedMapIndex + "/FloorPlans/";
+        string floorDirPath = Application.dataPath + MAP_DIR_PATH + selectedMapIndex + FLOOR_PLAN_PATH;
 
-        if(Directory.Exists(Application.dataPath + "/LevelEditor/"))
+        if(Directory.Exists(Application.dataPath + EDITOR_ROOT_PATH))
         {
-            DirectoryInfo dirInfo = new DirectoryInfo(Application.dataPath + "/LevelEditor/");
-            DirectoryInfo dirInfoFloorPath = new DirectoryInfo(Application.dataPath + "/LevelEditor/Map" + selectedMapIndex + "/FloorPlans/");
+            DirectoryInfo dirInfo = new DirectoryInfo(Application.dataPath + EDITOR_ROOT_PATH);
+            DirectoryInfo dirInfoFloorPath = new DirectoryInfo(Application.dataPath + MAP_DIR_PATH + selectedMapIndex + FLOOR_PLAN_PATH);
 
             // Piss off
             foreach(FileInfo file in dirInfoFloorPath.GetFiles()) { file.Delete(); }
             foreach(FileInfo file in dirInfo.GetFiles()) { file.Delete(); }
             foreach(DirectoryInfo dir in dirInfo.GetDirectories()) { dir.Delete(true); }
 
-            Directory.Delete(Application.dataPath + "/LevelEditor/");
+            Directory.Delete(Application.dataPath + EDITOR_ROOT_PATH);
 
             RefreshAssetDatabase(); // Refresh our database now to reflect our changes...
         }
+    }
+
+    private void CreateTestDungeon()
+    {
+
     }
 
     private bool CheckMultipleSpawnPoints()
@@ -441,7 +471,7 @@ public class LevelEditor : MonoBehaviour
     /// </summary>
     public void CreateMap()
     {
-        GetMapParentChildren(); // REMOVE???
+        GetMapFloorChildren(); // REMOVE???
 
         ClearMap(); // Make sure we get rid of our map objects...
 
@@ -456,7 +486,7 @@ public class LevelEditor : MonoBehaviour
         foreach(FloorPlan floorPlan in map.floorPlans)
         {
             // Set floor plan parents...
-            floorPlanTransform = new GameObject("FloorPlan" + floorPlanIndex).transform;
+            floorPlanTransform = new GameObject(FLOOR_PLAN_NAMEPREFIX + floorPlanIndex).transform;
             floorPlanParentTransforms.Add(floorPlanTransform);
             floorPlanTransform.transform.SetParent(mapParent);
 
@@ -507,7 +537,7 @@ public class LevelEditor : MonoBehaviour
         CreateCeiling(map, map.floorPlans.Last(), floorPlanParentTransforms.Last());
         CreateGround(map, map.floorPlans.First(), floorPlanParentTransforms.First());
 
-        GetMapParentChildren();
+        GetMapFloorChildren();
 
         SaveChanges(); // Save our scene...
 
@@ -606,7 +636,7 @@ public class Map
 [System.Serializable]
 public class FloorPlan
 {
-    [HideInInspector] public string floorPlanName = "FloorPlan";
+    [HideInInspector] public string floorPlanName = LevelEditor.FLOOR_PLAN_NAMEPREFIX;
     public int mapSize = 64;
     [HideInInspector] public float ceilingHeight = 0.5f;
     [HideInInspector] public float groundHeight = -0.5f;
