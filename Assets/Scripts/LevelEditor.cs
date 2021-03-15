@@ -98,8 +98,12 @@ public class LevelEditor : MonoBehaviour
     {
         if(saveMapEditsToScene)
         {
-            // Save our scene...
+            #if UNITY_EDITOR
+
+            // Save our scene in the editor...
             UnityEditor.SceneManagement.EditorSceneManager.SaveScene(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+
+            #endif 
         }
     }
 
@@ -268,6 +272,8 @@ public class LevelEditor : MonoBehaviour
     // Cool little piece of code to change a texture asset to be readable without doing it manually in the editor...
     public static void SetTextureImporterFormat(Texture2D texture, bool isReadable)
     {
+        #if UNITY_EDITOR
+
         if(!texture) return;
 
         string assetPath = UnityEditor.AssetDatabase.GetAssetPath(texture);
@@ -282,6 +288,8 @@ public class LevelEditor : MonoBehaviour
             UnityEditor.AssetDatabase.ImportAsset(assetPath);
             UnityEditor.AssetDatabase.Refresh();
         }
+
+        #endif
     }
 
     private void OnValidate()
@@ -302,6 +310,10 @@ public class LevelEditor : MonoBehaviour
 
     public static T[] GetFilesAtPath<T>(string path)
     {
+        T[] result = null;
+
+        #if UNITY_EDITOR
+
         ArrayList al = new ArrayList();
         string[] fileEntries = Directory.GetFiles(Application.dataPath + "/" + path);
 
@@ -317,9 +329,11 @@ public class LevelEditor : MonoBehaviour
             if(t != null) { al.Add(t); }
         }
 
-        T[] result = new T[al.Count];
+        result = new T[al.Count];
 
         for(int i = 0; i < al.Count; i++) { result[i] = (T)al[i]; }
+
+        #endif
 
         return result;
     }
@@ -565,6 +579,8 @@ public class LevelEditor : MonoBehaviour
     /// </summary>
     public static void CorrectSceneCam(Vector3 camPos, Vector3 camForward)
     {
+        #if UNITY_EDITOR
+
         //UnityEditor.EditorApplication.ExecuteMenuItem("Window/General/Scene"); // Switch to scene view...
 
         UnityEditor.SceneView sceneView = UnityEditor.SceneView.lastActiveSceneView;
@@ -579,6 +595,8 @@ public class LevelEditor : MonoBehaviour
             target.transform.rotation = Quaternion.LookRotation(camForward);
             sceneView.AlignViewToObject(target.transform);
         }
+
+        #endif 
     }
 
     private void CreateCeiling(Map map, FloorPlan floorPlan, Transform floorParent)

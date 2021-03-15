@@ -2,80 +2,78 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Grid based movement tutorial
+/// </summary>
 public class PlayerMovement : MonoBehaviour
 {
-    private const float GRAVITY = -15f;
-    private const float JUMP_HEIGHT = 1.1f;
-    private CharacterController charController;
+    private Vector3 nextMovePos;
+    public float moveSpeed = 5;
 
-    public float moveSpeed = 12f;
-    private Vector2 moveInput;
-    private Vector2 mouseInput;
-
-    private Vector3 plyrVelocity;
-    private Transform playerCamTransform;
-    private float rotX;
-    public float mouseSens = 4f;
+    public LayerMask collisionMask;
 
     private void Start()
     {
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        nextMovePos = transform.position;
 
-        charController = GetComponent<CharacterController>();
-        playerCamTransform = Camera.main.transform;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void Update()
     {
-        PlayerInput();
         Movement();
-    }
-
-    private void LateUpdate()
-    {
-        CamAndBodyRotate();
-    }
-
-    private void CamAndBodyRotate()
-    {
-        // Body/cam rotate
-        transform.Rotate(Vector3.up * mouseInput.x);
-        playerCamTransform.localRotation = Quaternion.Euler(rotX, 0f, 0f);
-
-        rotX -= mouseInput.y;
-        rotX = Mathf.Clamp(rotX, -90f, 90f);
-    }
-
-    private void PlayerInput()
-    {
-        moveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-        mouseInput = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * mouseSens;
-
-        // Jump
-        if(Input.GetKeyDown(KeyCode.Space) && IsGrounded())
-        {
-            plyrVelocity.y = Mathf.Sqrt(JUMP_HEIGHT * -2f * GRAVITY);
-        }
     }
 
     private void Movement()
     {
-        // Reset velocity
-        if(IsGrounded() && plyrVelocity.y < 0) { plyrVelocity.y = -2f; }
+        RotatePlayer();
 
-        Vector3 moveDir = transform.right * moveInput.x + transform.forward * moveInput.y;
+        if(Vector3.Distance(transform.position, nextMovePos) <= .05f)
+        {
+            // Forward
+            if(Input.GetKey(KeyCode.W) && transform.position == nextMovePos) 
+            { 
+                if(CanMoveToPos(nextMovePos + transform.forward))
+                {
+                    nextMovePos += transform.forward;
+                }
+            }
 
-        charController.Move(moveDir * moveSpeed * Time.deltaTime);
+            // Backwards
+            if(Input.GetKey(KeyCode.S) && transform.position == nextMovePos) 
+            {
+                if(CanMoveToPos(nextMovePos + transform.forward * -1f))
+                {
+                    nextMovePos += transform.forward * -1f;
+                }
+            }
+        }
 
-        // Apply gravity
-        plyrVelocity.y += GRAVITY * Time.deltaTime;
-        charController.Move(plyrVelocity * Time.deltaTime);
+        transform.position = Vector3.MoveTowards(transform.position, nextMovePos, moveSpeed * Time.deltaTime);
     }
 
-    private bool IsGrounded()
+    private bool CanMoveToPos(Vector3 movePosToCheck)
     {
-        return Physics.Raycast(transform.position, Vector3.down, charController.bounds.extents.y + 0.5f);
+        Collider[] colliders = Physics.OverlapBox(movePosToCheck, new Vector3(0.25f, 0.25f, 0.25f), Quaternion.identity, collisionMask);
+
+        if(colliders.Length == 0) { return true; }
+
+        return false;
     }
 
+    private void RotatePlayer()
+    {
+        // Left
+        if(Input.GetKeyDown(KeyCode.A)) { transform.Rotate(new Vector3(0, -90, 0)); }
+
+        // Right 
+        if(Input.GetKeyDown(KeyCode.D)) { transform.Rotate(new Vector3(0, 90, 0)); }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.blue;
+        Gizmos.DrawWireCube(nextMovePos + transform.forward, new Vector3(0.25f, 0.25f, 0.25f));
+    }
 }
