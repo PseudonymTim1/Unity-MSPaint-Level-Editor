@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Grid based movement tutorial
-/// </summary>
 public class PlayerMovement : MonoBehaviour
 {
     private Vector3 nextMovePos;
