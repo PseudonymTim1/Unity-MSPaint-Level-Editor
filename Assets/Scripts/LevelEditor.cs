@@ -208,7 +208,24 @@ public class LevelEditor : MonoBehaviour
                     ApplyTextureChanges(floorPlan.floorPlanTexture, texBytesNew);
                 }
             }
-            
+
+            // Hack to remove duped spawn point pixels...
+            for(int x = 0; x < floorPlan.mapSize; x++)
+            {
+                for(int y = 0; y < floorPlan.mapSize; y++)
+                {
+                    if(floorPlan.floorPlanTexture.GetPixel(x, y) == map.playerSpawnPoint.pixelColor)
+                    {
+                        spawnPointCount++;
+
+                        if(spawnPointCount > 1)
+                        {
+                            floorPlan.floorPlanTexture.SetPixel(x, y, Color.white);
+                        }
+                    }
+                }
+            }
+
             // Save the texture...
             SaveFloorTextures(floorPlan.floorPlanTexture, floorIndex);
 
