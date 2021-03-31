@@ -171,6 +171,7 @@ public class LevelEditor : MonoBehaviour
 
         int floorIndex = 0;
         int moddedFloorIndex = 0;
+        int spawnPointCount = 0;
 
         List<Texture2D> floorPlanTextures = new List<Texture2D>();
 
@@ -221,6 +222,7 @@ public class LevelEditor : MonoBehaviour
                         if(spawnPointCount > 1)
                         {
                             floorPlan.floorPlanTexture.SetPixel(x, y, Color.white);
+                            spawnPointCount = 0;
                         }
                     }
                 }

@@ -2,75 +2,82 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Simple FPS player controller 
+/// </summary>
 public class PlayerMovement : MonoBehaviour
 {
-    private Vector3 nextMovePos;
-    public float moveSpeed = 5;
+    private const float GRAVITY = -15f;
+    private const float JUMP_HEIGHT = 0.5f;
+    private CharacterController charController;
 
-    public LayerMask collisionMask;
+    public float moveSpeed = 12f;
+    private Vector2 moveInput;
+    private Vector2 mouseInput;
+
+    private Vector3 plyrVelocity;
+    private Transform playerCamTransform;
+    private float rotX;
+    public float mouseSens = 4f;
 
     private void Start()
     {
-        nextMovePos = transform.position;
-
-        Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
+        charController = GetComponent<CharacterController>();
+        playerCamTransform = Camera.main.transform;
     }
 
     private void Update()
     {
+        PlayerInput();
         Movement();
+    }
+
+    private void LateUpdate()
+    {
+        CamAndBodyRotate();
+    }
+
+    private void CamAndBodyRotate()
+    {
+        // Body/cam rotate
+        transform.Rotate(Vector3.up * mouseInput.x);
+        playerCamTransform.localRotation = Quaternion.Euler(rotX, 0f, 0f);
+
+        rotX -= mouseInput.y;
+        rotX = Mathf.Clamp(rotX, -90f, 90f);
+    }
+
+    private void PlayerInput()
+    {
+        moveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+        mouseInput = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * mouseSens;
+
+        // Jump
+        if(Input.GetKeyDown(KeyCode.Space) && IsGrounded())
+        {
+            plyrVelocity.y = Mathf.Sqrt(JUMP_HEIGHT * -2f * GRAVITY);
+        }
     }
 
     private void Movement()
     {
-        RotatePlayer();
+        // Reset velocity
+        if(IsGrounded() && plyrVelocity.y < 0) { plyrVelocity.y = -2f; }
 
-        if(Vector3.Distance(transform.position, nextMovePos) <= .05f)
-        {
-            // Forward
-            if(Input.GetKey(KeyCode.W) && transform.position == nextMovePos) 
-            { 
-                if(CanMoveToPos(nextMovePos + transform.forward))
-                {
-                    nextMovePos += transform.forward;
-                }
-            }
+        Vector3 moveDir = transform.right * moveInput.x + transform.forward * moveInput.y;
 
-            // Backwards
-            if(Input.GetKey(KeyCode.S) && transform.position == nextMovePos) 
-            {
-                if(CanMoveToPos(nextMovePos + transform.forward * -1f))
-                {
-                    nextMovePos += transform.forward * -1f;
-                }
-            }
-        }
+        charController.Move(moveDir * moveSpeed * Time.deltaTime);
 
-        transform.position = Vector3.MoveTowards(transform.position, nextMovePos, moveSpeed * Time.deltaTime);
+        // Apply gravity
+        plyrVelocity.y += GRAVITY * Time.deltaTime;
+        charController.Move(plyrVelocity * Time.deltaTime);
     }
 
-    private bool CanMoveToPos(Vector3 movePosToCheck)
+    private bool IsGrounded()
     {
-        Collider[] colliders = Physics.OverlapBox(movePosToCheck, new Vector3(0.25f, 0.25f, 0.25f), Quaternion.identity, collisionMask);
-
-        if(colliders.Length == 0) { return true; }
-
-        return false;
-    }
-
-    private void RotatePlayer()
-    {
-        // Left
-        if(Input.GetKeyDown(KeyCode.A)) { transform.Rotate(new Vector3(0, -90, 0)); }
-
-        // Right 
-        if(Input.GetKeyDown(KeyCode.D)) { transform.Rotate(new Vector3(0, 90, 0)); }
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireCube(nextMovePos + transform.forward, new Vector3(0.25f, 0.25f, 0.25f));
+        return Physics.Raycast(transform.position, Vector3.down, charController.bounds.extents.y + 0.5f);
     }
 }
